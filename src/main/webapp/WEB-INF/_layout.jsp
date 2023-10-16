@@ -20,6 +20,7 @@
       <li <%= "abut.jsp".equals(page_body) ? "class='active'" : ""%>><a href="<%=context%>/jsp">JSP</a></li>
       <li <%= "filters.jsp".equals(page_body) ? "class='active'" : ""%>><a href="<%=context%>/filters">Filters</a></li>
       <li <%= "ioc.jsp".equals(page_body) ? "class='active'" : ""%>><a href="<%=context%>/ioc">Ioc</a></li>
+      <li <%= "db.jsp".equals(page_body) ? "class='active'" : ""%>><a href="<%=context%>/db">DB</a></li>
     </ul>
   </div>
 </nav>
