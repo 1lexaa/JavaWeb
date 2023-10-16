@@ -13,6 +13,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
 </head>
 <body>
+
+
+
 <nav>
   <div class="nav-wrapper light-blue">
     <a href="<%=context%>" class="brand-logo right">Java</a>
