@@ -5,16 +5,18 @@ import com.google.gson.JsonParser;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.Objects;
 
 @Singleton
 public class PlanetDbProvider implements DbProvider
 {
-   private final Connection connection;
+   private  Connection connection;
 
 @Inject
     public PlanetDbProvider(Connection connection) {
@@ -42,6 +44,17 @@ public class PlanetDbProvider implements DbProvider
             }
             catch (NullPointerException ex) {
                 throw new RuntimeException("res not found");
+            }
+            try {
+                JsonObject planetConfig = dbConfig.get("DataProviders").getAsJsonObject().get("PlanetScale").getAsJsonObject();
+                DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+                connection = DriverManager.getConnection(
+                        planetConfig.get("url").getAsString(),
+                        planetConfig.get("user").getAsString(),
+                        planetConfig.get("password").getAsString()
+                );
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
             }
         }
         return connection;
