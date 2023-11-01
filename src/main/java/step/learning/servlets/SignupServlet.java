@@ -2,6 +2,7 @@ package step.learning.servlets;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import step.learning.dao.UserDao;
 import step.learning.dto.models.SignupFormModel;
 import step.learning.services.culture.ResourceProvider;
 import step.learning.services.formparse.FormParsResult;
@@ -21,12 +22,14 @@ public class SignupServlet extends HttpServlet
 {
     private final ResourceProvider _resource_provider;
     private final FormParsService _form_pars_service;
+    private final UserDao _user_dao;
 
     @Inject
-    public SignupServlet(ResourceProvider resource_provider, FormParsService formParsService)
+    public SignupServlet(ResourceProvider resource_provider, FormParsService formParsService, UserDao user_dao)
     {
         _resource_provider = resource_provider;
         _form_pars_service = formParsService;
+        _user_dao = user_dao;
     }
 
     @Override
@@ -56,6 +59,9 @@ public class SignupServlet extends HttpServlet
                         validation_errors.put(key, translation);
                 }
                 req.setAttribute("validation_errors", validation_errors);
+
+                if(form_model != null && validation_errors.isEmpty())
+                    _user_dao.AddFromForm(form_model);
             }
         }
         req.setAttribute("page-body", "signup.jsp");
@@ -76,8 +82,7 @@ public class SignupServlet extends HttpServlet
 
             Map<String, String> validation_errors = form_model.GetValidationErrorMessage();
 
-            if (validation_errors.isEmpty()) { }
-            else
+            if (validation_errors.isEmpty())
             {
                 session.setAttribute("reg-status", 2);
                 session.setAttribute("reg-model", form_model);

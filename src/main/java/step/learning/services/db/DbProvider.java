@@ -4,5 +4,5 @@ import java.sql.Connection;
 
 public interface DbProvider
 {
-    Connection getConnection();
+    Connection GetConnection();
 }

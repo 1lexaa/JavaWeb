@@ -5,11 +5,15 @@ import com.google.inject.Provides;
 import com.google.inject.name.Names;
 import step.learning.services.culture.ResourceProvider;
 import step.learning.services.culture.StringResourceProvider;
+import step.learning.services.db.DbProvider;
+import step.learning.services.db.PlanetDbProvider;
 import step.learning.services.formparse.FormParsService;
 import step.learning.services.formparse.MixedFormParsService;
 import step.learning.services.hash.HashService;
 import step.learning.services.hash.Md5HashService;
 import step.learning.services.hash.Sha1HashService;
+import step.learning.services.kdf.DigestHashKdfService;
+import step.learning.services.kdf.KdfService;
 import step.learning.services.random.*;
 
 public class ServicesModule extends AbstractModule
@@ -21,6 +25,9 @@ public class ServicesModule extends AbstractModule
         bind(HashService.class).annotatedWith(Names.named("Signature-hash")).to(Sha1HashService.class);
         bind(ResourceProvider.class).to(StringResourceProvider.class);
         bind(FormParsService.class).to(MixedFormParsService.class);
+        bind(DbProvider.class).to(PlanetDbProvider.class);
+        bind(KdfService.class).to(DigestHashKdfService.class);
+        bind(String.class).annotatedWith(Names.named("db-prefix")).toInstance("java_web");
     }
 
     private RandomServices random_service ;

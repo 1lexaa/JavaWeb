@@ -2,61 +2,45 @@ package step.learning.services.db;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
-
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Objects;
 
 @Singleton
 public class PlanetDbProvider implements DbProvider
 {
-   private  Connection connection;
-
-@Inject
-    public PlanetDbProvider(Connection connection) {
-        this.connection = connection;
-    }
-
+    private Connection _connection;
 
     @Override
-    public Connection getConnection()
+    public Connection GetConnection()
     {
-        if(connection == null)
+        JsonObject db_config = null;
 
+        if (_connection == null)
         {
-            JsonObject dbConfig;
-            try (
-         Reader reader = new InputStreamReader(
-                 Objects.requireNonNull(
-                         this.getClass().getClassLoader()
-                                 .getResourceAsStream("db_config.json")))
-            )
+            try (Reader reader = new InputStreamReader(Objects.requireNonNull(
+                    this.getClass().getClassLoader().getResourceAsStream("db_config.json"))))
             {
-                dbConfig = JsonParser.parseReader(reader).getAsJsonObject();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
+                db_config = JsonParser.parseReader(reader).getAsJsonObject();
             }
-            catch (NullPointerException ex) {
-                throw new RuntimeException("res not found");
-            }
-            try {
-                JsonObject planetConfig = dbConfig.get("DataProviders").getAsJsonObject().get("PlanetScale").getAsJsonObject();
+            catch (IOException ex) { throw new RuntimeException(ex); }
+            catch (NullPointerException ex) { throw new RuntimeException("Resource not found"); }
+
+            try
+            {
+                JsonObject planet_config = db_config.get("DataProviders").getAsJsonObject().get("PlanetScale").getAsJsonObject();
                 DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
-                connection = DriverManager.getConnection(
-                        planetConfig.get("url").getAsString(),
-                        planetConfig.get("user").getAsString(),
-                        planetConfig.get("password").getAsString()
-                );
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
+
+                _connection = DriverManager.getConnection(planet_config.get("url").getAsString(),
+                        planet_config.get("user").getAsString(), planet_config.get("password").getAsString());
             }
+            catch (SQLException ex) { throw new RuntimeException(ex); }
         }
-        return connection;
+        return _connection;
     }
 }
