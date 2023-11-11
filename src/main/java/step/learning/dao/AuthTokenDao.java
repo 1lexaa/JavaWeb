@@ -18,7 +18,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Singleton
-public class AuthTokenDao
+public class AuthTokenDao extends DaoBase
 {
     private final DbProvider _db_provider;
     private final String _db_prefix;
@@ -28,6 +28,8 @@ public class AuthTokenDao
     @Inject
     public AuthTokenDao(DbProvider db_provider, @Named("db-prefix") String db_prefix, Logger logger, UserDao user_dao)
     {
+        super(logger, db_provider);
+
         _db_provider = db_provider;
         _db_prefix = db_prefix;
         _logger = logger;
@@ -96,8 +98,9 @@ public class AuthTokenDao
 
     private AuthToken GetActiveTokenForUser(String userId)
     {
-        String sql = "SELECT BIN_TO_UUID(`jti`) AS jti, `sub`, `iat`, `exp` FROM " + _db_prefix +
-                "auth_tokens WHERE `sub` = ? AND `exp` > CURRENT_TIMESTAMP";
+        String sql = "SELECT BIN_TO_UUID(a.`jti`) AS jti, a.`sub`, a.`iat`, a.`exp`, u.`login` AS nik FROM " + _db_prefix +
+                "auth_tokens a JOIN " + _db_prefix + "users u ON a.sub = u.id " +
+                "WHERE a.`jti` = ? AND a.`exp` > CURRENT_TIMESTAMP";
 
         try (PreparedStatement prep = _db_provider.GetConnection().prepareStatement(sql))
         {
@@ -113,20 +116,6 @@ public class AuthTokenDao
         return null;
     }
 
-    private Timestamp GetDbTimestamp()
-    {
-        try(Statement statement = _db_provider.GetConnection().createStatement())
-        {
-            ResultSet result_set = statement.executeQuery("SELECT CURRENT_TIMESTAMP");
-
-            result_set.next();
-            return result_set.getTimestamp(1);
-        }
-        catch (Exception ex) { _logger.log(Level.WARNING, ex.getMessage()); }
-
-        return null;
-    }
-
     public AuthToken GetTokenByBearer(String bearer_content)
     {
         String jti;
@@ -137,7 +126,9 @@ public class AuthTokenDao
         }
         catch(Exception ex) { return null; }
 
-        String sql = "SELECT BIN_TO_UUID(`jti`) AS jti, `sub`, `iat`, `exp` FROM " + _db_prefix + "auth_tokens WHERE `jti` = UUID_TO_BIN(?) AND `exp` > CURRENT_TIMESTAMP";
+        String sql = "SELECT BIN_TO_UUID(a.`jti`) AS jti, a.`sub`, a.`iat`, a.`exp`, u.`login` AS nik FROM " + _db_prefix +
+                "auth_tokens a JOIN " + _db_prefix + "users u ON a.sub = u.id " +
+                "WHERE a.`jti` = UUID_TO_BIN(?) AND a.`exp` > CURRENT_TIMESTAMP";
 
         try(PreparedStatement prep = _db_provider.GetConnection().prepareStatement(sql))
         {
@@ -152,5 +143,20 @@ public class AuthTokenDao
         catch(Exception e) { _logger.log(Level.WARNING, e.getMessage() + " -- " + sql); }
 
         return null;
+    }
+
+    public void RenewToken(AuthToken token)
+    {
+        String sql = "UPDATE " + _db_prefix + "auth_tokens SET `exp` = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 12 HOUR) WHERE `jti` = UUID_TO_BIN(?)";
+
+        try(PreparedStatement prep = _db_provider.GetConnection().prepareStatement(sql))
+        {
+            prep.setString(1, token.GetJti());
+            prep.executeUpdate();
+
+            Date new_exp = new Date(token.GetExp().getTime() + 1000L * 60 * 60 * 12);
+            token.SetExp(new_exp);
+        }
+        catch(Exception e) { _logger.log(Level.WARNING, e.getMessage() + " -- " + sql); }
     }
 }
